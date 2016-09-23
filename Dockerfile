@@ -7,4 +7,4 @@ COPY . /app
 WORKDIR /app
 RUN pip install -r web/requirements.txt
 ENTRYPOINT ["python3.5"]
-CMD ["BluePTempoAPI.py"]
+CMD ["web/BluePTempoAPI.py"]
