@@ -1,14 +1,15 @@
 import configparser, json, boto3
 from bson import json_util
 from flask import Flask, Response
+from flask_cors import CORS, cross_origin
 from werkzeug.routing import BaseConverter
-
 
 
 config = configparser.ConfigParser()
 config.read('default.cfg')
 
 app = Flask(__name__)
+CORS(app)
 session = boto3.Session(
     aws_access_key_id=config['Auth']['AWSAccessKeyId'],
     aws_secret_access_key=config['Auth']['AWSSecretKey'],
