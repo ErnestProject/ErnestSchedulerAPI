@@ -65,7 +65,7 @@ def create_instance():
 
     return instance_ip
 
-@app.route('/instance/<regex("([0-9]{1,3}\.){3}[0-9]{1,3}"):instanceIp>', methods=['DELETE'])
+@app.route('/instance/<regex("([0-9]{1,3}\.){3}[0-9]{1,3}"):instance_ip>', methods=['DELETE'])
 def terminate_instance(instance_ip):
     print('Finding instance by IP...')
     req = ec2_client.describe_instances(Filters=[
