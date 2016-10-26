@@ -1,9 +1,12 @@
-import boto3
+import configparser, boto3
 from flask import Flask
 
 GAMMING_AMI_ID = 'ami-89f904e6'
 SECURITY_GROUP = 'lg'
 SPOT_PRICE = '0.50'
+
+config = configparser.ConfigParser()
+config.read('default.example.cfg')
 
 app = Flask(__name__)
 session = boto3.Session(
@@ -24,7 +27,7 @@ app.url_map.converters['regex'] = RegexConverter
 
 @app.route('/')
 def version():
-    return 'BluePTempoAPI v0.0.2'
+    return config['Global']['version']
 
 @app.route('/create_instance')
 def create_instance():
