@@ -65,6 +65,26 @@ def create_instance():
 
     return instance_ip
 
+@app.route('/instance/<regex("([0-9]{1,3}\.){3}[0-9]{1,3}"):instanceIp>', methods=['DELETE'])
+def terminate_instance(instance_ip):
+    print('Finding instance by IP...')
+    req = ec2_client.describe_instances(Filters=[
+        {
+            'Name': 'ip-address',
+            'Values': [
+                instance_ip,
+            ]
+        },
+    ])
+    instance_id = req['Reservations'][0]['Instances'][0]['InstanceId']
+    print('instance_id: ' + instance_id)
+    print('Terminate instance')
+    ec2_client.terminate_instances(
+        InstanceIds=[
+            instance_id
+        ]
+    )
+    return instance_id
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0')
