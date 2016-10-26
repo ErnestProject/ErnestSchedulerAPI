@@ -2,3 +2,5 @@
 .idea/
 *.iml
 static/
+
+default.cfg
