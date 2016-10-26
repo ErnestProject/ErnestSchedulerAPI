@@ -1,12 +1,8 @@
 import configparser, boto3
 from flask import Flask
 
-GAMMING_AMI_ID = 'ami-89f904e6'
-SECURITY_GROUP = 'lg'
-SPOT_PRICE = '0.50'
-
 config = configparser.ConfigParser()
-config.read('default.example.cfg')
+config.read('default.cfg')
 
 app = Flask(__name__)
 session = boto3.Session(
@@ -33,11 +29,11 @@ def version():
 def create_instance():
     print('Creating spot instance request...')
     req = ec2_client.request_spot_instances(
-        SpotPrice=SPOT_PRICE,
+        SpotPrice=config['AWS']['SPOT_PRICE'],
         InstanceCount=1,
         LaunchSpecification={
-            'ImageId': GAMMING_AMI_ID,
-                'SecurityGroups': [SECURITY_GROUP],
+            'ImageId': config['AWS']['GAMING_AMI_ID'],
+                'SecurityGroups': [config['AWS']['SECURITY_GROUP']],
             'InstanceType': 'g2.2xlarge',
             'Placement': {
                 'AvailabilityZone': 'eu-central-1b',
