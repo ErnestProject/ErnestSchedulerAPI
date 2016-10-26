@@ -1,22 +1,22 @@
-import configparser, boto3
-from flask import Flask
+import configparser, json, boto3
+from bson import json_util
+from flask import Flask, Response
+from werkzeug.routing import BaseConverter
 
-GAMMING_AMI_ID = 'ami-89f904e6'
-SECURITY_GROUP = 'lg'
-SPOT_PRICE = '0.50'
+
 
 config = configparser.ConfigParser()
-config.read('default.example.cfg')
+config.read('default.cfg')
 
 app = Flask(__name__)
 session = boto3.Session(
-#    aws_access_key_id="",
-#    aws_secret_access_key="",
-    region_name="eu-central-1"
+    aws_access_key_id=config['Auth']['AWSAccessKeyId'],
+    aws_secret_access_key=config['Auth']['AWSSecretKey'],
+    region_name=config['AWS']['REGION_NAME']
 )
 ec2_client = session.client('ec2')
 
-from werkzeug.routing import BaseConverter
+
 
 class RegexConverter(BaseConverter):
     def __init__(self, url_map, *items):
@@ -25,19 +25,34 @@ class RegexConverter(BaseConverter):
 
 app.url_map.converters['regex'] = RegexConverter
 
+
+
 @app.route('/')
 def version():
     return config['Global']['version']
+
+@app.route('/instances', methods=['GET'])
+def list_all_instances():
+    print('Finding instance by AMI ID...')
+    req = ec2_client.describe_instances(Filters=[
+        {
+            'Name': 'image-id',
+            'Values': [ config['AWS']['GAMING_AMI_ID'] ]
+        },
+    ])
+    
+    json_response = json.dumps(req, default=json_util.default, indent=4, sort_keys=True)
+    return Response(json_response, mimetype='application/json')
 
 @app.route('/create_instance')
 def create_instance():
     print('Creating spot instance request...')
     req = ec2_client.request_spot_instances(
-        SpotPrice=SPOT_PRICE,
+        SpotPrice=config['AWS']['SPOT_PRICE'],
         InstanceCount=1,
         LaunchSpecification={
-            'ImageId': GAMMING_AMI_ID,
-                'SecurityGroups': [SECURITY_GROUP],
+            'ImageId': config['AWS']['GAMING_AMI_ID'],
+                'SecurityGroups': [config['AWS']['SECURITY_GROUP']],
             'InstanceType': 'g2.2xlarge',
             'Placement': {
                 'AvailabilityZone': 'eu-central-1b',
