@@ -24,7 +24,7 @@ app.url_map.converters['regex'] = RegexConverter
 
 @app.route('/')
 def version():
-    return 'BluePTempoAPI v0.0.1'
+    return 'BluePTempoAPI v0.0.2'
 
 @app.route('/create_instance')
 def create_instance():
