@@ -6,18 +6,24 @@ from werkzeug.routing import BaseConverter
 
 
 config = configparser.ConfigParser()
-config.read('default.cfg')
+config.read_file(open('conf/defaults.cfg'))
+config.read('conf/secret.cfg')
 
 app = Flask(__name__)
 CORS(app)
-session = boto3.Session(
-    aws_access_key_id=config['Auth']['AWSAccessKeyId'],
-    aws_secret_access_key=config['Auth']['AWSSecretKey'],
-    region_name=config['AWS']['REGION_NAME']
-)
+
+if config.has_section('Auth') and config.has_option('Auth', 'AWSAccessKeyId') and config.has_option('Auth', 'AWSSecretKey'):
+    session = boto3.Session(
+        aws_access_key_id=config['Auth']['AWSAccessKeyId'],
+        aws_secret_access_key=config['Auth']['AWSSecretKey'],
+        region_name=config['AWS']['REGION_NAME']
+    )
+else:
+    session = boto3.Session(
+        region_name=config['AWS']['REGION_NAME']
+    )
+
 ec2_client = session.client('ec2')
-
-
 
 class RegexConverter(BaseConverter):
     def __init__(self, url_map, *items):
