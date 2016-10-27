@@ -42,10 +42,13 @@ def list_all_instances():
         },
     ])
     
-    json_response = json.dumps(req, default=json_util.default, indent=4, sort_keys=True)
+    def extract_instance(rawData):
+        return rawData['Instances'][0]
+
+    json_response = json.dumps(list(map(extract_instance, req['Reservations'])), default=json_util.default, indent=4, sort_keys=True)
     return Response(json_response, mimetype='application/json')
 
-@app.route('/create_instance')
+@app.route('/instances', methods=['POST'])
 def create_instance():
     print('Creating spot instance request...')
     req = ec2_client.request_spot_instances(
@@ -84,7 +87,7 @@ def create_instance():
 
     return instance_ip
 
-@app.route('/instance/<regex("([0-9]{1,3}\.){3}[0-9]{1,3}"):instance_ip>', methods=['DELETE'])
+@app.route('/instances/<regex("([0-9]{1,3}\.){3}[0-9]{1,3}"):instance_ip>', methods=['DELETE'])
 def terminate_instance(instance_ip):
     print('Finding instance by IP...')
     req = ec2_client.describe_instances(Filters=[
