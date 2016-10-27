@@ -3,4 +3,4 @@
 *.iml
 static/
 
-default.cfg
+conf/secret.cfg
