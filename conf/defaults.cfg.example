@@ -6,3 +6,4 @@ REGION_NAME 		= <instance region name>
 GAMING_AMI_ID 	= <image ID>
 SECURITY_GROUP 	= <security group>
 SPOT_PRICE 			= 0.50
+INSTANCE_TYPE   = g2.2xlarge

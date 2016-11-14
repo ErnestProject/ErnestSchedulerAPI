@@ -1,4 +1,4 @@
-import configparser, json, boto3
+import configparser, json, boto3, botocore
 from bson import json_util
 from flask import Flask, Response
 from flask_cors import CORS, cross_origin
@@ -33,10 +33,10 @@ class RegexConverter(BaseConverter):
 app.url_map.converters['regex'] = RegexConverter
 
 
-
 @app.route('/')
 def version():
     return config['Global']['version']
+
 
 @app.route('/instances', methods=['GET'])
 def list_all_instances():
@@ -54,16 +54,39 @@ def list_all_instances():
     json_response = json.dumps(list(map(extract_instance, req['Reservations'])), default=json_util.default, indent=4, sort_keys=True)
     return Response(json_response, mimetype='application/json')
 
-@app.route('/instances', methods=['POST'])
-def create_instance():
+
+@app.route('/instances/<regex("i\-[a-z0-9]{8}"):instance_id>', methods=['GET'])
+def describe_instance(instance_id):
+    print('Finding instance by AMI ID...')
+    req = ec2_client.describe_instances(
+        InstanceIds=[
+            instance_id,
+        ],
+        Filters=[
+        {
+            'Name': 'image-id',
+            'Values': [ config['AWS']['GAMING_AMI_ID'] ]
+        },
+    ])
+
+    filtered_fields = ["InstanceId", "State", "PublicIpAddress"]
+    to_filter_dict = req['Reservations'][0]['Instances'][0]
+    instance = filter_dict_fields(filtered_fields, to_filter_dict)
+
+    json_response = json.dumps(instance, default=json_util.default, indent=4, sort_keys=True)
+    return Response(json_response, mimetype='application/json')
+
+
+@app.route('/spot_instance_requests', methods=['POST'])
+def create_spot_request():
     print('Creating spot instance request...')
     req = ec2_client.request_spot_instances(
         SpotPrice=config['AWS']['SPOT_PRICE'],
         InstanceCount=1,
         LaunchSpecification={
             'ImageId': config['AWS']['GAMING_AMI_ID'],
-                'SecurityGroups': [config['AWS']['SECURITY_GROUP']],
-            'InstanceType': 'g2.2xlarge',
+            'SecurityGroups': [config['AWS']['SECURITY_GROUP']],
+            'InstanceType': config['AWS']['INSTANCE_TYPE'],
             'Placement': {
                 'AvailabilityZone': 'eu-central-1b',
             },
@@ -73,25 +96,42 @@ def create_instance():
 
         }
     )
-    req_id = req['SpotInstanceRequests'][0]['SpotInstanceRequestId']
-    print('req_id: ' + req_id)
 
-    print('Waiting for instance to be launched...')
-    waiter = ec2_client.get_waiter('spot_instance_request_fulfilled')
-    waiter.wait(SpotInstanceRequestIds=[req_id])
-    req = ec2_client.describe_spot_instance_requests(SpotInstanceRequestIds=[req_id])
-    instance_id = req['SpotInstanceRequests'][0]['InstanceId']
-    print('instance_id: ' + instance_id)
+    filtered_fields = ["SpotInstanceRequestId"]
+    to_filter_dict = req['SpotInstanceRequests'][0]
+    request_id = filter_dict_fields(filtered_fields, to_filter_dict)
+    json_response = json.dumps(request_id, default=json_util.default, indent=4, sort_keys=True)
+    return Response(json_response, mimetype='application/json')
 
-    print('Removing the spot instance request...')
-    ec2_client.cancel_spot_instance_requests(SpotInstanceRequestIds=[req_id])
 
-    print('Getting ip address...')
-    req = ec2_client.describe_instances(InstanceIds=[instance_id])
-    instance_ip = req['Reservations'][0]['Instances'][0]['PublicIpAddress']
-    print('instance_ip: ' + instance_ip)
+@app.route('/spot_instance_requests/<regex("sir\-[a-z0-9]{8}"):request_id>', methods=['GET'])
+def spot_request_status(request_id):
+    req = ec2_client.describe_spot_instance_requests(
+        SpotInstanceRequestIds=[
+            request_id,
+        ])
+    filtered_fields = ["SpotInstanceRequestId", "State", "Status", "InstanceId"]
+    to_filter_dict = req['SpotInstanceRequests'][0]
+    request_state = filter_dict_fields(filtered_fields, to_filter_dict)
+    json_response = json.dumps(request_state, default=json_util.default, indent=4, sort_keys=True)
+    return Response(json_response, mimetype='application/json')
 
-    return instance_ip
+
+@app.route('/spot_instance_requests/<regex("sir\-[a-z0-9]{8}"):request_id>', methods=['DELETE'])
+def spot_request_delete(request_id):
+    req = ec2_client.cancel_spot_instance_requests(SpotInstanceRequestIds=[request_id])
+
+    filtered_fields = ["SpotInstanceRequestId", "State"]
+    to_filter_dict = req['CancelledSpotInstanceRequests'][0]
+    request_state = filter_dict_fields(filtered_fields, to_filter_dict)
+    json_response = json.dumps(request_state, default=json_util.default, indent=4, sort_keys=True)
+    return Response(json_response, mimetype='application/json')
+
+
+def filter_dict_fields(filtered_fields, to_filter_dict):
+    filtered_dict = {k: v for k, v in to_filter_dict.items() if k in filtered_fields}
+    return filtered_dict
+
 
 @app.route('/instances/<regex("([0-9]{1,3}\.){3}[0-9]{1,3}"):instance_ip>', methods=['DELETE'])
 def terminate_instance(instance_ip):
