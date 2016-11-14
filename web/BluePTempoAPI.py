@@ -1,4 +1,5 @@
-import configparser, json, boto3
+import configparser, json, boto3, string
+import winrm
 from bson import json_util
 from flask import Flask, Response
 from flask_cors import CORS, cross_origin
@@ -113,6 +114,41 @@ def terminate_instance(instance_ip):
         ]
     )
     return instance_id
+
+@app.route('/instances/<regex("([0-9]{1,3}\.){3}[0-9]{1,3}"):instance_ip>/install/<regex("[0-9]+"):game_id>', methods=['PATCH'])
+def install_game(instance_ip, game_id):
+    print('install game')
+    ps_script = string.Template("""
+        Read-S3Object -BucketName bluepolo-games -Key ${gameId}.zip -File 'Z:\${gameId}.zip'
+
+        $ZipPath = "Z:\${gameId}.zip"
+        $zipfile = (new-object -com shell.application).NameSpace($ZipPath)
+        md "Z:\yop"
+        $destinationPath = "Z:\yop"
+        $destination = (new-object -com shell.application).NameSpace($destinationPath)
+        $destination.CopyHere($zipfile.Items())
+    """).safe_substitute(gameId=game_id)
+    s = winrm.Session(instance_ip, auth=('Administrator', 'Polaroide000'))
+    r = s.run_ps(ps_script)
+    print(r.status_code, flush=True)
+    print(r.std_out, flush=True)
+    print(r.std_err, flush=True)
+
+    return "OK"
+
+@app.route('/titi', methods=['GET'])
+def titi():
+    print('install game')
+    ps_script = """
+        for($i=1; $i -le 10; $i++){tscon.exe $i /dest:console}
+    """
+    s = winrm.Session("35.156.11.120", auth=('Administrator', 'Polaroide000'))
+    r = s.run_ps(ps_script)
+    print(r.status_code, flush=True)
+    print(r.std_out, flush=True)
+    print(r.std_err, flush=True)
+
+    return "OK"
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)
