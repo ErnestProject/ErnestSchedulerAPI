@@ -1,5 +1,5 @@
 [Global]
-version 				= BluePTempoAPI vX.Y.Z
+version 				= ErnestSchedulerAPI vX.Y.Z
 
 [AWS]
 REGION_NAME 		= <instance region name>
