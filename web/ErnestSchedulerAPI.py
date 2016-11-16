@@ -119,6 +119,11 @@ def create_spot_request():
     json_response = json.dumps(request_id, default=json_util.default, indent=4, sort_keys=True)
     return Response(json_response, mimetype='application/json')
 
+@app.route('/spot_instance_requests', methods=['GET'])
+def list_all_spot_requests():
+    req = ec2_client.describe_spot_instance_requests()
+    json_response = json.dumps(req['SpotInstanceRequests'], default=json_util.default, indent=4, sort_keys=True)
+    return Response(json_response, mimetype='application/json')
 
 @app.route('/spot_instance_requests/<regex("sir\-[a-z0-9]{8}"):request_id>', methods=['GET'])
 def spot_request_status(request_id):
