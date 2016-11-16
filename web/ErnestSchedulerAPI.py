@@ -1,6 +1,6 @@
 import configparser, json, boto3, botocore
 from bson import json_util
-from flask import Flask, Response
+from flask import Flask, Response, request
 from flask_cors import CORS, cross_origin
 from werkzeug.routing import BaseConverter
 
@@ -79,16 +79,32 @@ def describe_instance(instance_id):
 
 @app.route('/spot_instance_requests', methods=['POST'])
 def create_spot_request():
-    print('Creating spot instance request...')
+    print('\nCreating spot instance request...')
+
+    instance_type       = config['AWS']['INSTANCE_TYPE']
+    availability_zone   = config['AWS']['REGION_NAME'] + "b"
+    spot_price          = config['AWS']['SPOT_PRICE']
+
+    post_params = json.loads(request.data.decode("utf-8"))
+    if 'type' in post_params and post_params['type']:
+        instance_type       = post_params['type']
+    if 'location' in post_params and post_params['location']:
+        availability_zone   = post_params['location']
+    if 'price' in post_params and post_params['price']:
+        spot_price          = str(post_params['price'])
+
+    print(instance_type, availability_zone, spot_price)
+
+
     req = ec2_client.request_spot_instances(
-        SpotPrice=config['AWS']['SPOT_PRICE'],
+        SpotPrice=spot_price,
         InstanceCount=1,
         LaunchSpecification={
             'ImageId': config['AWS']['GAMING_AMI_ID'],
             'SecurityGroups': [config['AWS']['SECURITY_GROUP']],
-            'InstanceType': config['AWS']['INSTANCE_TYPE'],
+            'InstanceType': instance_type,
             'Placement': {
-                'AvailabilityZone': 'eu-central-1b',
+                'AvailabilityZone': availability_zone,
             },
             'IamInstanceProfile': {
                 'Name': 'game-installer',
