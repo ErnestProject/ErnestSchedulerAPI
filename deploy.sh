@@ -10,7 +10,7 @@ docker rm $(docker ps -q -f status=exited)
 docker build -t bluep-tempo-api:latest . 
 
 # Run the new image
-docker run -d -p 5000:5000 bluep-tempo-api
+docker run -d -p 5000:5000  -v $(pwd):/app bluep-tempo-api
 
 # Watch logs
 docker logs -f $(docker ps -q)
