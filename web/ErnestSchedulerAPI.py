@@ -112,11 +112,8 @@ def create_spot_request():
 
         }
     )
-
-    filtered_fields = ["SpotInstanceRequestId"]
-    to_filter_dict = req['SpotInstanceRequests'][0]
-    request_id = filter_dict_fields(filtered_fields, to_filter_dict)
-    json_response = json.dumps(request_id, default=json_util.default, indent=4, sort_keys=True)
+    
+    json_response = json.dumps(req['SpotInstanceRequests'][0], default=json_util.default, indent=4, sort_keys=True)
     return Response(json_response, mimetype='application/json')
 
 @app.route('/spot_instance_requests', methods=['GET'])
