@@ -88,19 +88,19 @@ def create_spot_request():
     print('\nCreating spot instance request...')
 
     instance_type       = config['AWS']['INSTANCE_TYPE']
-    availability_zone   = config['AWS']['REGION_NAME'] + "b"
+    availability_zone   = config['AWS']['AVAILABILITY_ZONE']
     spot_price          = config['AWS']['SPOT_PRICE']
 
-    post_params = json.loads(request.data.decode("utf-8"))
-    if 'type' in post_params and post_params['type']:
-        instance_type       = post_params['type']
-    if 'location' in post_params and post_params['location']:
-        availability_zone   = post_params['location']
-    if 'price' in post_params and post_params['price']:
-        spot_price          = str(post_params['price'])
+    if request.data:
+        post_params = json.loads(request.data.decode("utf-8"))
+        if 'type' in post_params and post_params['type']:
+            instance_type       = post_params['type']
+        if 'location' in post_params and post_params['location']:
+            availability_zone   = post_params['location']
+        if 'price' in post_params and post_params['price']:
+            spot_price          = str(post_params['price'])
 
     print(instance_type, availability_zone, spot_price)
-
 
     req = ec2_client.request_spot_instances(
         SpotPrice=spot_price,
