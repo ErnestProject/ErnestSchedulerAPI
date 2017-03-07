@@ -62,7 +62,7 @@ def list_all_instances():
     return format_response(list(map(extract_instance, req['Reservations'])))
 
 
-@app.route('/instances/<regex("i\-[a-z0-9]{8}"):instance_id>', methods=['GET'])
+@app.route('/instances/<regex("i\-[a-z0-9]{17}"):instance_id>', methods=['GET'])
 def describe_instance(instance_id):
     print('Finding instance by AMI ID...')
     req = ec2_client.describe_instances(
